@@ -13,8 +13,7 @@ type NodeStore interface {
 	GetContainer(ctx context.Context, id string) (*Container, error)
 	ListContainers(ctx context.Context) ([]*Container, error)
 	DelContainer(ctx context.Context, id string) error
-
-	CloseDB() error
+	Close() error
 }
 
 type BoltStore struct {
@@ -129,4 +128,11 @@ func (s *BoltStore) DelContainer(ctx context.Context, id string) error {
 
 		return bucket.Delete([]byte(id))
 	})
+}
+
+func (s *BoltStore) Close() error {
+	if s.db != nil {
+		return s.db.Close()
+	}
+	return nil
 }
