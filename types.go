@@ -5,16 +5,15 @@ import "time"
 type ContainerState string
 
 const (
-	Requested  ContainerState = "requested"
-	Scheduling ContainerState = "scheduling"
-	Scheduled  ContainerState = "scheduled"
-	Pulling    ContainerState = "pulling"
-	Starting   ContainerState = "starting"
-	Running    ContainerState = "running"
-	Stopping   ContainerState = "stopping"
-	Stopped    ContainerState = "stopped"
-	Failed     ContainerState = "failed"
-	Destroyed  ContainerState = "destroyed"
+	Requested ContainerState = "requested"
+	Pulling   ContainerState = "pulling"
+	Created   ContainerState = "created"
+	Starting  ContainerState = "starting"
+	Running   ContainerState = "running"
+	Stopping  ContainerState = "stopping"
+	Stopped   ContainerState = "stopped"
+	Failed    ContainerState = "failed"
+	Destroyed ContainerState = "destroyed"
 )
 
 type Container struct {
