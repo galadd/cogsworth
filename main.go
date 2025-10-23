@@ -104,16 +104,17 @@ func addContainer() {
 
 	if len(os.Args) >= 4 {
 		parts := strings.Split(os.Args[3], ":")
-		host, _ := strconv.Atoi(parts[0])
-		container, _ := strconv.Atoi(parts[1])
-		ports = []PortMapping{{host, container, "tcp"}}
+		if len(parts) == 2 {
+			host, _ := strconv.Atoi(parts[0])
+			container, _ := strconv.Atoi(parts[1])
+			ports = []PortMapping{{host, container, "tcp"}}
+		}
 	}
 
 	store, err := NewBoltStore("./cogsworth.db")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer store.Close()
 
 	container := &Container{
 		ID:           generateID(),
@@ -144,7 +145,6 @@ func listContainers() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer store.Close()
 
 	containers, err := store.ListContainers(context.Background())
 	if err != nil {
@@ -156,11 +156,11 @@ func listContainers() {
 		return
 	}
 
-	fmt.Printf("%-15s %-20s %-10s %-10s\n", "ID", "IMAGE", "STATE", "DESIRED")
+	fmt.Printf("%-20s %-20s %-10s %-10s\n", "ID", "IMAGE", "STATE", "DESIRED")
 	fmt.Println(strings.Repeat("-", 60))
 	for _, c := range containers {
-		fmt.Printf("%-15s %-20s %-10s %-10s\n",
-			c.ID[:12],
+		fmt.Printf("%-20s %-20s %-10s %-10s\n",
+			c.ID,
 			c.Image,
 			c.State,
 			c.DesiredState,
@@ -180,19 +180,18 @@ func deleteContainer() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer store.Close()
 
 	ctx := context.Background()
 
 	container, err := store.GetContainer(ctx, id)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Delete Container error: %v", err)
 	}
 
 	container.DesiredState = Destroyed
 	err = store.SaveContainer(ctx, container)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Delete Container error: %v", err)
 	}
 }
 
