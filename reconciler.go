@@ -48,14 +48,14 @@ func (r *Reconciler) Stop() {
 func (r *Reconciler) reconcile(ctx context.Context) {
 	containers, err := r.cogsworth.store.ListContainers(ctx)
 	if err != nil {
-		fmt.Printf("Reconcile error: %v\n", err)
+		fmt.Printf("Can't get containers: %v\n", err)
 		return
 	}
 
 	for _, container := range containers {
 		err := r.reconcileContainer(ctx, container)
 		if err != nil {
-			fmt.Printf("Reconcile error: %v\n", err)
+			fmt.Printf("Reconcile container error: %v\n", err)
 		}
 	}
 }
@@ -100,6 +100,9 @@ func (r *Reconciler) reconcileContainer(ctx context.Context, container *Containe
 }
 
 func (r *Reconciler) reconcileRunning(ctx context.Context, container *Container, actualState ContainerState, exists bool) error {
+	if container.RestartCount >= 3 {
+		return nil
+	}
 	if !exists {
 		fmt.Printf("Container %s is missing, recreating...\n", container.ID)
 
@@ -134,6 +137,7 @@ func (r *Reconciler) reconcileRunning(ctx context.Context, container *Container,
 
 			// give up after 3 restarts
 			if container.RestartCount >= 3 {
+				container.DesiredState = Stopped
 				return fmt.Errorf("max restart: container %s failed %d times, giving up\n", container.ID, container.RestartCount)
 			}
 
