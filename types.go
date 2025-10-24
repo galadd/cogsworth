@@ -40,3 +40,35 @@ type PortMapping struct {
 	ContainerPort int    `json:"container_port"`
 	Protocol      string `json:"protocol"`
 }
+
+type Node struct {
+	ID        string    `json:"id"`
+	Address   string    `json:"address"`
+	Role      NodeRole  `json:"role"`
+	State     NodeState `json:"state"`
+	CreatedAt time.Time `json:"created_at"`
+	LastSeen  time.Time `json:"last_seen"`
+
+	Capacity  Resources `json:"capacity,omitempty"`
+	Allocated Resources `json:"allocated,omitempty"`
+}
+
+type NodeState string
+
+const (
+	NodeReady    NodeState = "ready"
+	NodeNotReady NodeState = "not_ready"
+)
+
+type NodeRole string
+
+const (
+	ControlPlane NodeRole = "control-plane"
+	Worker       NodeRole = "worker"
+)
+
+type Resources struct {
+	CPUCores int   `json:"cpu_cores"`
+	MemoryMB int64 `json:"memory_mb"`
+	DiskGB   int64 `json:"disk_gb"`
+}
