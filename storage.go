@@ -9,11 +9,17 @@ import (
 	"go.etcd.io/bbolt"
 )
 
-type NodeStore interface {
+type Store interface {
 	SaveContainer(ctx context.Context, c *Container) error
 	GetContainer(ctx context.Context, id string) (*Container, error)
 	ListContainers(ctx context.Context) ([]*Container, error)
 	DelContainer(ctx context.Context, id string) error
+
+	SaveNode(ctx context.Context, n *Node) error
+	GetNode(ctx context.Context, id string) (*Node, error)
+	ListNodes(ctx context.Context) ([]*Node, error)
+	DelNode(ctx context.Context, id string) error
+
 	Close() error
 }
 
@@ -23,6 +29,7 @@ type BoltStore struct {
 }
 
 var containersBucket = []byte("containers")
+var nodesBucket = []byte("nodes")
 
 func NewBoltStore(path string) (*BoltStore, error) {
 	db, err := bbolt.Open(path, 0600, nil)
@@ -133,6 +140,100 @@ func (s *BoltStore) DelContainer(ctx context.Context, id string) error {
 			return bucket.Delete([]byte(id))
 		})
 	})
+	return err
+}
+
+func (s *BoltStore) SaveNode(ctx context.Context, n *Node) error {
+	err := s.withDB(s.path, func(db *bbolt.DB) error {
+		return db.Update(func(tx *bbolt.Tx) error {
+			bucket := tx.Bucket(nodesBucket)
+			if bucket == nil {
+				return fmt.Errorf("node's bucket not found")
+			}
+
+			data, err := json.Marshal(n)
+			if err != nil {
+				return fmt.Errorf("failed to marshal node: %w", err)
+			}
+
+			err = bucket.Put([]byte(n.ID), data)
+			if err != nil {
+				return fmt.Errorf("failed to save node: %w", err)
+			}
+
+			return nil
+		})
+	})
+
+	return err
+}
+
+func (s *BoltStore) GetNode(ctx context.Context, id string) (*Node, error) {
+	var node *Node
+
+	err := s.withDB(s.path, func(db *bbolt.DB) error {
+		return db.View(func(tx *bbolt.Tx) error {
+			bucket := tx.Bucket(nodesBucket)
+			if bucket == nil {
+				return fmt.Errorf("node's bucket not found")
+			}
+
+			data := bucket.Get([]byte(id))
+			if data == nil {
+				return fmt.Errorf("node %s not found", id)
+			}
+
+			node = &Node{}
+			err := json.Unmarshal(data, node)
+			if err != nil {
+				return fmt.Errorf("failed to unmarshal node: %w", err)
+			}
+
+			return nil
+		})
+	})
+
+	return node, err
+}
+
+func (s *BoltStore) ListNodes(ctx context.Context) ([]*Node, error) {
+	var nodes []*Node
+
+	err := s.withDB(s.path, func(db *bbolt.DB) error {
+		return db.View(func(tx *bbolt.Tx) error {
+			bucket := tx.Bucket(nodesBucket)
+			if bucket == nil {
+				return fmt.Errorf("nodes bucket not found")
+			}
+
+			return bucket.ForEach(func(k, v []byte) error {
+				var node Node
+				err := json.Unmarshal(v, &node)
+				if err != nil {
+					return fmt.Errorf("failed to unmarshal node: %w", err)
+				}
+
+				nodes = append(nodes, &node)
+				return nil
+			})
+		})
+	})
+
+	return nodes, err
+}
+
+func (s *BoltStore) DelNode(ctx context.Context, id string) error {
+	err := s.withDB(s.path, func(db *bbolt.DB) error {
+		return db.Update(func(tx *bbolt.Tx) error {
+			bucket := tx.Bucket(nodesBucket)
+			if bucket == nil {
+				return fmt.Errorf("node's bucket not found")
+			}
+
+			return bucket.Delete([]byte(id))
+		})
+	})
+
 	return err
 }
 
