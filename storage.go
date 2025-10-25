@@ -39,7 +39,16 @@ func NewBoltStore(path string) (*BoltStore, error) {
 
 	err = db.Update(func(tx *bbolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists(containersBucket)
-		return err
+		if err != nil {
+			return err
+		}
+
+		_, err = tx.CreateBucketIfNotExists(nodesBucket)
+		if err != nil {
+			return err
+		}
+
+		return nil
 	})
 	db.Close()
 
