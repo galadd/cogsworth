@@ -17,22 +17,20 @@ const (
 )
 
 type Container struct {
-	ID    string `json:"id"`
-	Image string `json:"image"`
+	ID           string            `json:"id"`
+	Image        string            `json:"image"`
+	State        ContainerState    `json:"state"`
+	DesiredState ContainerState    `json:"desired_state"`
+	CreatedAt    time.Time         `json:"created_at"`
+	UpdatedAt    time.Time         `json:"updated_at"`
+	ContainerID  string            `json:"container_id"`
+	IPAddress    string            `json:"ip_address"`
+	Env          map[string]string `json:"env"`
+	Ports        []PortMapping     `json:"ports"`
+	RestartCount int               `json:"restart_count"`
 
-	State        ContainerState `json:"state"`
-	DesiredState ContainerState `json:"desired_state"`
-
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-
-	ContainerID string `json:"container_id"`
-	IPAddress   string `json:"ip_address"`
-
-	Env   map[string]string `json:"env"`
-	Ports []PortMapping     `json:"ports"`
-
-	RestartCount int `json:"restart_count"`
+	NodeID    string `json:"node_id"`
+	Scheduled bool   `json:"scheduled"`
 }
 
 type PortMapping struct {
