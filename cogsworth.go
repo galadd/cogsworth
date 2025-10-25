@@ -9,12 +9,54 @@ import (
 )
 
 type Cogsworth struct {
-	store      NodeStore
+	store      Store
 	runtime    Runtime
 	reconciler *Reconciler
+	scheduler  *Scheduler
+
+	//multi-node fields
+	nodeID    string
+	role      NodeRole
+	apiServer *APIServer
+	apiClient *APIClient
 }
 
-func NewCogsworth(store NodeStore, runtime Runtime) *Cogsworth {
+func NewControlPlane(storePath, apiAddr string) (*Cogsworth, error) {
+	store, err := NewBoltStore(storePath)
+	if err != nil {
+		return nil, err
+	}
+
+	cogs := &Cogsworth{
+		store:     store,
+		scheduler: NewScheduler(store),
+		nodeID:    "control-plane-1",
+		role:      ControlPlane,
+		apiServer: NewAPIServer(store, apiAddr),
+	}
+
+	cogs.reconciler = NewReconciler(cogs, 5*time.Second)
+	return cogs, nil
+}
+
+func NewWorkerNode(nodeID, controlPlaneURL string) (*Cogsworth, error) {
+	runtime, err := NewDockerRuntime()
+	if err != nil {
+		return nil, err
+	}
+
+	cogs := &Cogsworth{
+		runtime:   runtime,
+		nodeID:    nodeID,
+		role:      Worker,
+		apiClient: NewAPIClient(controlPlaneURL, nodeID),
+	}
+
+	cogs.reconciler = NewReconciler(cogs, 5*time.Second)
+	return cogs, nil
+}
+
+func NewCogsworth(store Store, runtime Runtime) *Cogsworth {
 	c := &Cogsworth{
 		store:   store,
 		runtime: runtime,
